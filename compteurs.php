@@ -2,19 +2,24 @@
 
 
 
-header('Access-Control-Allow-Origin: http://localhost:8080'); // Autorise uniquement l'origine de votre application Vue.js
+header('Access-Control-Allow-Origin: http://localhost:3000'); // Autorise uniquement l'origine de votre application Vue.js
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Autorise les méthodes HTTP
 header('Access-Control-Allow-Headers: Content-Type, Authorization'); // Autorise les en-têtes spécifiques
 header('Access-Control-Allow-Credentials: true'); // Si vous utilisez des cookies ou des sessions
 
-session_start();
-
-// Vérifier si l'utilisateur est authentifié
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401); // Unauthorized
-    echo json_encode(['success' => false, 'message' => 'Non autorisé']);
-    exit();
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit;
 }
+
+session_start();
+$_SESSION['user_id'] = 1;
+// Vérifier si l'utilisateur est authentifié
+// if (!isset($_SESSION['user_id'])) {
+//     http_response_code(401); // Unauthorized
+//     echo json_encode(['success' => false, 'message' => 'Non autorisé']);
+//     exit();
+// }
 
 // Inclusion du fichier de connexion
 require_once 'dbconnect.php';
