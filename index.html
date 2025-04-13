@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Compteurs VueJS</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    input, button { margin: 0.3rem; }
+    .compteur { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>Gestion des compteurs</h1>
+
+    <!-- Connexion -->
+    <div v-if="!connected">
+      <h2>Connexion</h2>
+      <input v-model="loginData.username" placeholder="Nom d'utilisateur" />
+      <input v-model="loginData.password" type="password" placeholder="Mot de passe" />
+      <button @click="login">Se connecter</button>
+      <p v-if="error" style="color: red;">{{ error }}</p>
+    </div>
+
+    <!-- Interface principale -->
+    <div v-else>
+      <button @click="logout">Déconnexion</button>
+      <h2>Liste des compteurs</h2>
+
+      <div v-for="compteur in compteurs" :key="compteur.id" class="compteur">
+        <div v-if="editId === compteur.id">
+          <input v-model="form.nom_proprietaire" placeholder="Propriétaire" />
+          <input v-model="form.numero_voie" placeholder="Numéro voie" />
+          <input v-model="form.nom_voie" placeholder="Nom voie" />
+          <input v-model="form.code_postal" placeholder="Code postal" />
+          <input v-model="form.ville" placeholder="Ville" />
+          <input v-model="form.code_insee" placeholder="Code INSEE" />
+          <button @click="updateCompteur(compteur.id)">Enregistrer</button>
+          <button @click="editId = null">Annuler</button>
+        </div>
+        <div v-else>
+          <strong>{{ compteur.nom_proprietaire }}</strong><br>
+          {{ compteur.numero_voie }} {{ compteur.nom_voie }}, {{ compteur.code_postal }} {{ compteur.ville }}<br>
+          INSEE: {{ compteur.code_insee }}<br>
+          <button @click="edit(compteur)">Modifier</button>
+          <button @click="deleteCompteur(compteur.id)">Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          connected: false,
+          compteurs: [],
+          loginData: { username: '', password: '' },
+          error: '',
+          editId: null,
+          form: {
+            nom_proprietaire: '',
+            numero_voie: '',
+            nom_voie: '',
+            code_postal: '',
+            ville: '',
+            code_insee: ''
+          }
+        };
+      },
+      methods: {
+        async login() {
+          this.error = '';
+          const res = await fetch('login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.loginData),
+            credentials: 'include' // pour garder la session
+          });
+          const data = await res.json();
+          if (data.success) {
+            this.connected = true;
+            this.fetchCompteurs();
+          } else {
+            this.error = data.message;
+          }
+        },
+        async logout() {
+          await fetch('logout.php', { credentials: 'include' });
+          this.connected = false;
+          this.compteurs = [];
+        },
+        async fetchCompteurs() {
+          const res = await fetch('compteurs.php', { credentials: 'include' });
+          const data = await res.json();
+          this.compteurs = data.data || [];
+        },
+        edit(compteur) {
+          this.editId = compteur.id;
+          this.form = { ...compteur }; // copie les données dans le formulaire
+        },
+        async updateCompteur(id) {
+          await fetch(`compteurs.php?id=${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(this.form)
+          });
+          this.editId = null;
+          this.fetchCompteurs();
+        },
+        async deleteCompteur(id) {
+          if (!confirm("Supprimer ce compteur ?")) return;
+          await fetch(`compteurs.php?id=${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          this.fetchCompteurs();
+        }
+      }
+    }).mount('#app');
+  </script
